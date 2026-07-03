@@ -8,9 +8,10 @@ app.use(express.json());
 
 app.use(
     rateLimiter({
-        algorithm : "fixed-window",
+        algorithm : "fixedWindow",
         window : 60,
-        limit : 5
+        limit : 5,
+        keyGenerator: (req) => req.ip
     })
 );
 
@@ -18,4 +19,3 @@ app.use('/api',demoRoutes);
 
 export default app;
 
-// Even though the algorithm isn't implemented yet, we're already designing the middleware API.

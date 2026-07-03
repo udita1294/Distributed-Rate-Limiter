@@ -7,7 +7,7 @@ export default function rateLimiter(options = {}){
         const key = req.ip;
 
         const result = await fixedWindow(key,options);
-
+        console.log(result);
         res.setHeader('X-RateLimit-Limit',options.limit);
         res.setHeader('X-RateLimit-Remaining',result.remaining);
         res.setHeader('Retry-After',result.retryAfter);

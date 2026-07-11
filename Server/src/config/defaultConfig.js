@@ -8,6 +8,9 @@ const defaultConfig = {
     algorithm: "fixedWindow",
     window: 60,
     limit: 5,
+    capacity:10,
+    refillRate: 1,
+    leakRate: 1,
 
     // a function that decides how to identify a client.
     keyGenerator: (req) => req.ip

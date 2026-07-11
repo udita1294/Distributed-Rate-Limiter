@@ -65,4 +65,16 @@ Each request generates a Redis key via `config.keyGenerator` (client IP by defau
 - **Blocked:** `429 Too Many Requests` with a `Retry-After` header and a JSON body:
   ```json
   { "success": false, "message": "Too many requests." }
+  
   ```
+<img width="1862" height="901" alt="Screenshot 2026-07-11 183439" src="https://github.com/user-attachments/assets/414c77ba-c55b-4fb0-9da6-5c0ef982c5fd" />
+<img width="1847" height="893" alt="Screenshot 2026-07-11 183542" src="https://github.com/user-attachments/assets/51b21443-39ea-489d-b010-c3b1e7476fcb" />
+<img width="1867" height="900" alt="Screenshot 2026-07-11 183633" src="https://github.com/user-attachments/assets/334a0b21-4733-4b13-b739-c4e699f7e152" />
+<img width="1842" height="896" alt="Screenshot 2026-07-11 183707" src="https://github.com/user-attachments/assets/6826a92b-2cb4-4d76-b8ea-dbd2839267ef" />
+<img width="1852" height="898" alt="Screenshot 2026-07-11 183845" src="https://github.com/user-attachments/assets/2a5e67d2-3110-409b-9414-69618129b5fc" />
+
+
+
+
+
+  

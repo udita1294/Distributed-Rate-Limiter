@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Distributed Rate Limiter Playground</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo-area">
+                <span class="icon">🚦</span>
+                <h1>Distributed Rate Limiter <span class="badge">Playground</span></h1>
+            </div>
+            <p class="subtitle">An interactive visual simulator for distributed rate-limiting algorithms built on Node.js, Express, and Redis.</p>
+        </header>
+
+        <!-- Main Layout -->
+        <div class="main-layout">
+            <!-- Sidebar / Control Panel -->
+            <aside class="sidebar card">
+                <h2>Control Panel</h2>
+                
+                <!-- Algorithm Selection Tabs -->
+                <div class="tabs" role="tablist">
+                    <button class="tab-btn active" data-algo="fixedWindow" role="tab" aria-selected="true" id="tab-fixedWindow">Fixed Window</button>
+                    <button class="tab-btn" data-algo="slidingWindow" role="tab" aria-selected="false" id="tab-slidingWindow">Sliding Window</button>
+                    <button class="tab-btn" data-algo="tokenBucket" role="tab" aria-selected="false" id="tab-tokenBucket">Token Bucket</button>
+                    <button class="tab-btn" data-algo="leakyBucket" role="tab" aria-selected="false" id="tab-leakyBucket">Leaky Bucket</button>
+                </div>
+
+                <!-- Parameters Form -->
+                <form id="config-form" class="config-form" onsubmit="event.preventDefault();">
+                    <div class="form-group" id="group-clientId">
+                        <label for="input-clientId">Client Identifier (Simulate Multi-Client)</label>
+                        <input type="text" id="input-clientId" placeholder="e.g. client_1 (Leave empty for IP)" maxlength="20">
+                    </div>
+
+                    <!-- Algorithm Specific Parameters -->
+                    <!-- Fixed & Sliding Window Parameters -->
+                    <div class="algo-param fixedWindow slidingWindow">
+                        <div class="form-group">
+                            <div class="label-val">
+                                <label for="range-limit">Rate Limit (Requests)</label>
+                                <span class="val-bubble" id="val-limit">5</span>
+                            </div>
+                            <input type="range" id="range-limit" min="1" max="30" value="5">
+                        </div>
+                        <div class="form-group">
+                            <div class="label-val">
+                                <label for="range-window">Time Window (Seconds)</label>
+                                <span class="val-bubble" id="val-window">60</span>
+                            </div>
+                            <input type="range" id="range-window" min="5" max="180" value="60">
+                        </div>
+                    </div>
+
+                    <!-- Token Bucket Parameters -->
+                    <div class="algo-param tokenBucket" style="display: none;">
+                        <div class="form-group">
+                            <div class="label-val">
+                                <label for="range-tb-capacity">Bucket Capacity (Tokens)</label>
+                                <span class="val-bubble" id="val-tb-capacity">10</span>
+                            </div>
+                            <input type="range" id="range-tb-capacity" min="1" max="50" value="10">
+                        </div>
+                        <div class="form-group">
+                            <div class="label-val">
+                                <label for="range-tb-refillRate">Refill Rate (Tokens/Sec)</label>
+                                <span class="val-bubble" id="val-tb-refillRate">1</span>
+                            </div>
+                            <input type="range" id="range-tb-refillRate" min="0.1" max="10" step="0.1" value="1">
+                        </div>
+                    </div>
+
+                    <!-- Leaky Bucket Parameters -->
+                    <div class="algo-param leakyBucket" style="display: none;">
+                        <div class="form-group">
+                            <div class="label-val">
+                                <label for="range-lb-capacity">Queue Capacity (Requests)</label>
+                                <span class="val-bubble" id="val-lb-capacity">10</span>
+                            </div>
+                            <input type="range" id="range-lb-capacity" min="1" max="50" value="10">
+                        </div>
+                        <div class="form-group">
+                            <div class="label-val">
+                                <label for="range-lb-leakRate">Leak Rate (Requests/Sec)</label>
+                                <span class="val-bubble" id="val-lb-leakRate">1</span>
+                            </div>
+                            <input type="range" id="range-lb-leakRate" min="0.1" max="10" step="0.1" value="1">
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Simulator Actions -->
+                <div class="simulator-actions">
+                    <h3>Simulation Actions</h3>
+                    <div class="action-grid">
+                        <button id="btn-request" class="action-btn primary-btn">
+                            <span class="btn-icon">⚡</span> Send Request
+                        </button>
+                        <button id="btn-burst" class="action-btn secondary-btn">
+                            <span class="btn-icon">💥</span> Burst Mode (5x)
+                        </button>
+                        <button id="btn-autopilot" class="action-btn autopilot-btn">
+                            <span class="btn-icon">🤖</span> Start Auto-Pilot
+                        </button>
+                        <button id="btn-reset" class="action-btn reset-btn">
+                            <span class="btn-icon">🔄</span> Reset State
+                        </button>
+                    </div>
+                    <div class="autopilot-settings" id="autopilot-settings" style="display: none;">
+                        <label for="range-auto-interval">Interval: <span id="val-auto-interval">500</span>ms</label>
+                        <input type="range" id="range-auto-interval" min="100" max="2000" step="50" value="500">
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Workspace Section -->
+            <main class="workspace">
+                <!-- Visualizer Panel -->
+                <section class="visualizer card">
+                    <div class="panel-header">
+                        <h2>Real-Time Visualization</h2>
+                        <div class="status-indicator" id="status-indicator">
+                            <span class="status-dot green"></span> Ready
+                        </div>
+                    </div>
+                    
+                    <div class="visualization-wrapper">
+                        <!-- Fixed Window Visualizer -->
+                        <div id="vis-fixedWindow" class="vis-container active">
+                            <div class="vis-grid">
+                                <div class="gauge-card">
+                                    <div class="radial-gauge">
+                                        <svg viewBox="0 0 100 100">
+                                            <circle class="gauge-bg" cx="50" cy="50" r="40"></circle>
+                                            <circle class="gauge-fill" id="fixed-gauge-fill" cx="50" cy="50" r="40" stroke-dasharray="251.2" stroke-dashoffset="251.2"></circle>
+                                        </svg>
+                                        <div class="gauge-text">
+                                            <span class="count" id="fixed-req-count">0</span>
+                                            <span class="limit" id="fixed-req-limit">/ 5</span>
+                                        </div>
+                                    </div>
+                                    <p class="gauge-label">Window Requests</p>
+                                </div>
+                                <div class="timer-card">
+                                    <div class="timer-display" id="fixed-timer">60s</div>
+                                    <p class="timer-label">Time Until Reset</p>
+                                    <div class="progress-bar-container">
+                                        <div class="progress-bar-fill" id="fixed-timer-progress" style="width: 100%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sliding Window Visualizer -->
+                        <div id="vis-slidingWindow" class="vis-container">
+                            <div class="sliding-timeline-container">
+                                <div class="timeline-axis-label">Active Window (<span id="sliding-window-duration">60</span>s)</div>
+                                <div class="timeline-box">
+                                    <div class="timeline-grid-lines">
+                                        <span class="grid-line line-0"></span>
+                                        <span class="grid-line line-25"></span>
+                                        <span class="grid-line line-50"></span>
+                                        <span class="grid-line line-75"></span>
+                                        <span class="grid-line line-100"></span>
+                                    </div>
+                                    <div class="timeline-track" id="sliding-timeline-track">
+                                        <!-- Animated markers will appear here -->
+                                        <div class="no-requests" id="sliding-no-req">No requests in window</div>
+                                    </div>
+                                    <div class="timeline-now-pointer">
+                                        <div class="now-label">NOW</div>
+                                    </div>
+                                </div>
+                                <div class="timeline-legend">
+                                    <span class="legend-item"><span class="legend-dot green"></span> Allowed</span>
+                                    <span class="legend-item"><span class="legend-dot red"></span> Blocked</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Token Bucket Visualizer -->
+                        <div id="vis-tokenBucket" class="vis-container">
+                            <div class="bucket-visualization">
+                                <div class="bucket-container token-bucket">
+                                    <div class="bucket-label">Bucket Capacity (<span id="token-bucket-capacity-label">10</span>)</div>
+                                    <div class="bucket-inner" id="token-bucket-inner">
+                                        <!-- Tokens represented as glowing particles will float here -->
+                                    </div>
+                                </div>
+                                <div class="bucket-info">
+                                    <div class="info-card">
+                                        <div class="info-val" id="token-count-display">10.0</div>
+                                        <div class="info-lbl">Tokens Remaining</div>
+                                    </div>
+                                    <div class="info-card">
+                                        <div class="info-val" id="token-refill-display">1.0/s</div>
+                                        <div class="info-lbl">Refill Velocity</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Leaky Bucket Visualizer -->
+                        <div id="vis-leakyBucket" class="vis-container">
+                            <div class="bucket-visualization">
+                                <div class="bucket-container leaky-bucket">
+                                    <div class="bucket-label">Queue Capacity (<span id="leaky-bucket-capacity-label">10</span>)</div>
+                                    <!-- Liquid inside the bucket -->
+                                    <div class="leaky-water" id="leaky-water-fill" style="height: 0%;">
+                                        <span class="water-ripples"></span>
+                                    </div>
+                                    <!-- Drip faucet -->
+                                    <div class="faucet"></div>
+                                    <!-- Leak drops -->
+                                    <div class="leak-drip" id="leak-drip"></div>
+                                </div>
+                                <div class="bucket-info">
+                                    <div class="info-card">
+                                        <div class="info-val" id="leaky-queue-display">0</div>
+                                        <div class="info-lbl">Queue Size (Requests)</div>
+                                    </div>
+                                    <div class="info-card">
+                                        <div class="info-val" id="leaky-rate-display">1.0/s</div>
+                                        <div class="info-lbl">Leak Velocity</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Metrics and Terminal logs -->
+                <div class="data-section">
+                    <!-- Stats / Response Headers Card -->
+                    <section class="stats-panel card">
+                        <h2>Performance Statistics</h2>
+                        <div class="metrics-grid">
+                            <div class="metric-card">
+                                <span class="metric-num green" id="stat-allowed">0</span>
+                                <span class="metric-label">Allowed</span>
+                            </div>
+                            <div class="metric-card">
+                                <span class="metric-num red" id="stat-blocked">0</span>
+                                <span class="metric-label">Blocked</span>
+                            </div>
+                            <div class="metric-card">
+                                <span class="metric-num" id="stat-rate">0%</span>
+                                <span class="metric-label">Success Rate</span>
+                            </div>
+                        </div>
+
+                        <h3 class="section-divider">Latest HTTP Headers</h3>
+                        <div class="headers-list">
+                            <div class="header-item">
+                                <span class="header-name">X-RateLimit-Limit</span>
+                                <span class="header-val" id="header-limit">-</span>
+                            </div>
+                            <div class="header-item">
+                                <span class="header-name">X-RateLimit-Remaining</span>
+                                <span class="header-val" id="header-remaining">-</span>
+                            </div>
+                            <div class="header-item">
+                                <span class="header-name">Retry-After</span>
+                                <span class="header-val" id="header-retry">-</span>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Terminal Logs -->
+                    <section class="logs-panel card">
+                        <div class="panel-header">
+                            <h2>Transaction Console</h2>
+                            <button id="btn-clear-logs" class="clear-btn">Clear Logs</button>
+                        </div>
+                        <div class="console-box" id="console-box">
+                            <div class="log-line system-line">[SYSTEM] Console initialized. Select an algorithm and click 'Send Request' to begin.</div>
+                        </div>
+                    </section>
+                </div>
+            </main>
+        </div>
+        
+        <footer class="app-footer">
+            <p>Distributed Rate Limiter Dashboard &bull; Powered by Express, Redis, and Vanilla CSS</p>
+        </footer>
+    </div>
+
+    <!-- Main Client Script -->
+    <script src="app.js"></script>
+</body>
+</html>

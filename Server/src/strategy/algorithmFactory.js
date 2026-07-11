@@ -3,6 +3,8 @@
 
 import {fixedWindow} from "../algorithms/fixedWindow.js";
 import {slidingWindow} from "../algorithms/slidingWIndow.js";
+import {leakyBucket} from "../algorithms/leakyBucket.js";
+import {tokenBucket} from "../algorithms/tokenBucket.js";
 
 export function getAlgorithm(algorithmName){
 
@@ -13,6 +15,12 @@ export function getAlgorithm(algorithmName){
         
         case "slidingWindow":
             return slidingWindow;
+        
+        case "leakyBucket":
+            return leakyBucket;
+
+        case "tokenBucket":
+            return tokenBucket;
 
         default:
             throw new Error(`Algorithm ${algorithmName} is not supported`);

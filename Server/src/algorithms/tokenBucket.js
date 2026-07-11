@@ -40,11 +40,11 @@ export async function tokenBucket(key,options){
     //consume one token
     bucket.tokens -= 1;
 
-    await redisClient.set(rediskey,JSON.stringify(bucket),{EX:3600});
+    await redisClient.set(redisKey,JSON.stringify(bucket),{EX:3600});
 
     return{
         allowed: true,
-        count : capacit - Math.floor(bucket.tokens),
+        count : capacity - Math.floor(bucket.tokens),
         remaining: Math.floor(bucket.tokens),
         retryAfter : 0
     };

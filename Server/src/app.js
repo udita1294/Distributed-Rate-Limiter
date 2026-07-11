@@ -8,7 +8,7 @@ app.use(express.json());
 
 app.use(
     rateLimiter({
-        algorithm : "fixedWindow",
+        algorithm : "slidingWindow",
         window : 60,
         limit : 5,
         keyGenerator: (req) => req.ip

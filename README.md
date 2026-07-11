@@ -66,10 +66,3 @@ Each request generates a Redis key via `config.keyGenerator` (client IP by defau
   ```json
   { "success": false, "message": "Too many requests." }
   ```
-
-## 🔭 Possible Next Steps
-
-- Fix the token bucket variable-name bugs above
-- Add automated tests (currently no test suite is wired up)
-- Add a `.env.example` for easier onboarding
-- Support Redis Lua scripts for atomic token bucket / leaky bucket operations (removing the read-then-write race condition currently present in both)

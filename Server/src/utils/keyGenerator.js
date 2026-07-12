@@ -2,5 +2,9 @@
 // that the rate limiter will use for counting requests.
 
 export function generateKey(req,config){
-    return config.keyGenerator(req);
+    try{
+        return config.keyGenerator(req);
+    }catch(err){
+        throw new Error(`Error generating rate limitkey: ${err.message}`);
+    }
 }

@@ -28,4 +28,8 @@ export function validateConfig(config){
     if(typeof config.keyGenerator !== "function"){
         throw new Error("keyGenerator must be a function");
     }
+
+    if(typeof config.skip !== "function"){
+        throw new Error("skip must be a function");
+    }
 }

@@ -3,6 +3,7 @@ import defaultConfig from '../config/defaultConfig.js'
 import {getAlgorithm} from '../strategy/algorithmFactory.js'
 import {generateKey} from '../utils/keyGenerator.js'
 import {validateConfig} from '../utils/validateConfig.js'
+import {setRateLimitHeaders} from '../utils/setHeaders.js'
 
 
 export default function rateLimiter(options = {}){
@@ -18,6 +19,10 @@ export default function rateLimiter(options = {}){
 
     return async(req,res,next)=>{
         try{
+            //skip request
+            if(config.skip(req)){
+                return next();
+            }
             // Generate key
             const key = generateKey(req,config);
             // get algorithm function based on the config
@@ -26,24 +31,22 @@ export default function rateLimiter(options = {}){
             const result = await algorithm(key,config);
 
             // Standard Rate Limit Headers
-            res.setHeader('X-RateLimit-Limit',config.limit);
-            res.setHeader('X-RateLimit-Remaining',result.remaining);
-            res.setHeader('Retry-After',result.retryAfter);
+            setRateLimitHeaders(res,config,result);
 
-
+            //limit exceeded
             if(!result.allowed){
-                return res.status(429).json({
+                if(typeof config.onLimitReached === "function"){
+                    config.onLimitReached(req,res,result);
+                }
+                return res.status(config.statusCode).json({
                     success : false,
-                    message : "Too many requests."
+                    message : config.message,
+                    retryAfter : result.retryAfter
                 });
             }
             next();
         }catch(error){
-            console.error(error);
-            return res.status(500).json({
-                success : false,
-                message : error.message
-            });
+            next(error);
         }
     }
 }

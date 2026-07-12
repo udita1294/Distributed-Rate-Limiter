@@ -13,7 +13,17 @@ const defaultConfig = {
     leakRate: 1,
 
     // a function that decides how to identify a client.
-    keyGenerator: (req) => req.ip
+    keyGenerator: (req) => req.ip,
+
+    skip : ()=>false,
+
+    onLimitReached : null,
+    statusCode: 429,
+    message: "Too many requests, please try again later.",
+
+    legacayHeaders: true,
+    standardHeaders: true,
+
 };
 
 export default defaultConfig;
